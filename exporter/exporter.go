@@ -8,7 +8,7 @@ import (
 )
 
 func Run() {
-	http.HandleFunc("/metrics/get", routes.GetMetrics())
+	http.HandleFunc("/extensions/status", routes.ExtensionStatus())
 	http.HandleFunc("/metrics/send", routes.SendMetrics())
 	err := http.ListenAndServe(os.Getenv("PORT"), nil)
 	if err != nil {

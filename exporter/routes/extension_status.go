@@ -2,7 +2,7 @@ package routes
 
 import "net/http"
 
-func GetMetrics() http.HandlerFunc {
+func ExtensionStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 	}

@@ -11,7 +11,7 @@ services:
     ports:
       - "8086:8086"   # InfluxDB port
     volumes:
-      - influxdb-data:/var/lib/influxdb   # Persist data
+      - influxdb-extension:/var/lib/influxdb   # Persist extension
     restart: always
 
   grafana:
@@ -24,7 +24,7 @@ services:
     depends_on:
       - influxdb
     volumes:
-      - grafana-data:/var/lib/grafana   # Persist Grafana data
+      - grafana-extension:/var/lib/grafana   # Persist Grafana extension
     restart: always
 
 volumes:
