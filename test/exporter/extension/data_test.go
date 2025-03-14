@@ -10,11 +10,8 @@ func TestSerialization(t *testing.T) {
 	data := extension.Data{
 		ExtensionName: "ExampleExtension",
 		Interval:      15,
-		Metrics: []extension.Metric{
-			{Name: "Metric1", Data: int64(123), Type: extension.INT64},
-			{Name: "Metric2", Data: true, Type: extension.BOOL},
-			{Name: "Metric3", Data: 3.14, Type: extension.FLOAT64},
-			{Name: "Metric4", Data: "Hello, World!", Type: extension.STRING},
+		Metrics: []string{
+			"test", "test2",
 		},
 	}
 
