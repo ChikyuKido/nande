@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ChikyuKido/nande/exporter/database"
 	"github.com/ChikyuKido/nande/exporter/extension"
+	extension_runner "github.com/ChikyuKido/nande/exporter/extension-runner"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -33,7 +34,8 @@ func SendMetrics() http.HandlerFunc {
 			http.Error(w, "Failed to insert all metrics", http.StatusBadRequest)
 			return
 		}
-		logrus.Infof("Inserted %d metrics", len(data.Metrics))
+		logrus.Infof("Inserted %d metrics from %s", len(data.Metrics), data.ExtensionName)
+		extension_runner.UpdateExtensionStats(data)
 		w.WriteHeader(http.StatusOK)
 	}
 }

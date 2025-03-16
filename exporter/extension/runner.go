@@ -94,7 +94,7 @@ func checkEnv() bool {
 		logrus.Error("EXTENSION_NAME environment variable not set")
 		return false
 	} else {
-		EXTENSION_NAME = os.Getenv("URL")
+		EXTENSION_NAME = os.Getenv("EXTENSION_NAME")
 	}
 	return true
 }

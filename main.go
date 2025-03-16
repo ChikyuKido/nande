@@ -16,7 +16,7 @@ var grafanaCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.SetFormatter(&util.CustomFormatter{Group: "Nande-Grafana"})
 		util.CheckEnvForRun()
-		exporter.Run()
+
 	},
 }
 var runCmd = &cobra.Command{
@@ -33,8 +33,9 @@ func main() {
 	logrus.SetFormatter(&util.CustomFormatter{Group: "Nande"})
 	logrus.SetLevel(logrus.DebugLevel)
 	err := godotenv.Load()
+
 	if err != nil {
-		logrus.Fatal("Error loading .env file")
+		logrus.Warnf("No .env file found. This is fine if using docker and providing the environment variables with it")
 	}
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(grafanaCmd)

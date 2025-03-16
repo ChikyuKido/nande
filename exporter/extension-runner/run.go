@@ -2,6 +2,7 @@ package extension_runner
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
@@ -15,8 +16,13 @@ func RunExtensions(folder string) bool {
 
 	for _, entry := range dir {
 		if entry.IsDir() {
+			extensionDir := fmt.Sprintf("%s/%s", folder, entry.Name())
+			if !IsExtensionActive(extensionDir) {
+				logrus.Infof("Extension in %s not active. Skipping it.\n", extensionDir)
+				continue
+			}
 			cmd := exec.Command("./run")
-			cmd.Dir = fmt.Sprintf("%s/%s", folder, entry.Name())
+			cmd.Dir = extensionDir
 			cmd.Env = append(os.Environ(), "URL=http://localhost:"+os.Getenv("WEB_PORT")+"/metrics/send")
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -30,4 +36,13 @@ func RunExtensions(folder string) bool {
 		}
 	}
 	return true
+}
+
+func IsExtensionActive(folder string) bool {
+	envMap, err := godotenv.Read(folder + "/.env")
+	if err != nil {
+		logrus.Errorf("Error reading .env file: %v", err)
+		return false
+	}
+	return envMap["ACTIVE"] == "true"
 }

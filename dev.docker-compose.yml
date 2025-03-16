@@ -1,0 +1,51 @@
+
+services:
+  nande:
+    build:
+      context: .
+      dockerfile: DOCKERFILE
+    container_name: nande
+    environment:
+      WEB_PORT: 6643
+      EXTENSION_FOLDER: extension-build
+      INFLUX_URL: http://172.26.0.2:8086
+      INFLUX_TOKEN: superscecrettoken
+      INFLUX_ORG: nande
+      INFLUX_BUCKET: nande
+    ports:
+      - "6643:6643"
+    restart: always
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    environment:
+      - INFLUXDB_DB=nande
+      - INFLUXDB_HTTP_BIND_ADDRESS=:8086
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=Password
+      - DOCKER_INFLUXDB_INIT_ORG=nande
+      - DOCKER_INFLUXDB_INIT_BUCKET=nande
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=superscecrettoken
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: always
+
+volumes:
+  influxdb-data:
+  grafana-data:
