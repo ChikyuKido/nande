@@ -8,8 +8,9 @@ import (
 
 func TestSerialization(t *testing.T) {
 	data := extension.Data{
-		ExtensionName: "ExampleExtension",
-		Interval:      15,
+		ExtensionName:  "ExampleExtension",
+		Interval:       15,
+		ProcessingTime: 10,
 		Metrics: []string{
 			"test", "test2",
 		},

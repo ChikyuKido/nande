@@ -4,14 +4,18 @@ services:
     image: influxdb:latest
     container_name: influxdb
     environment:
-      - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_ADMIN_PASSWORD=admin
       - INFLUXDB_DB=nande
       - INFLUXDB_HTTP_BIND_ADDRESS=:8086
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=Password
+      - DOCKER_INFLUXDB_INIT_ORG=nande
+      - DOCKER_INFLUXDB_INIT_BUCKET=nande
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=superscecrettoken
     ports:
       - "8086:8086"   # InfluxDB port
     volumes:
-      - influxdb-extension:/var/lib/influxdb   # Persist extension
+      - influxdb-data:/var/lib/influxdb   # Persist extension
     restart: always
 
   grafana:
@@ -24,7 +28,7 @@ services:
     depends_on:
       - influxdb
     volumes:
-      - grafana-extension:/var/lib/grafana   # Persist Grafana extension
+      - grafana-data:/var/lib/grafana
     restart: always
 
 volumes:

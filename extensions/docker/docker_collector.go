@@ -53,21 +53,21 @@ func DockerCollector() extension.Data {
 		result.ID = stats["ID"].(string)
 		result.Name = stats["Name"].(string)
 		blockIO := strings.Split(stats["BlockIO"].(string), "/")
-		result.TotalIOWrite = parseIO(blockIO[0])
-		result.TotalIORead = parseIO(blockIO[1])
+		result.TotalIORead = parseIO(blockIO[0])
+		result.TotalIOWrite = parseIO(blockIO[1])
 		netIO := strings.Split(stats["NetIO"].(string), "/")
-		result.TotalNetWrite = parseIO(netIO[0])
-		result.TotalNetRead = parseIO(netIO[1])
+		result.TotalNetRead = parseIO(netIO[0])
+		result.TotalNetWrite = parseIO(netIO[1])
 		mem := strings.Split(stats["MemUsage"].(string), "/")
-		result.MemPercent = parseMem(mem[0])
+		result.MemUsed = parseMem(mem[0])
 		result.CPUPercent = parsePercent(stats["CPUPerc"].(string))
 		result.MemPercent = parsePercent(stats["MemPerc"].(string))
 
 		if oldStats.ID != "" {
 			result.IncrementalNetRead = result.TotalNetRead - oldStats.TotalNetRead
 			result.IncrementalNetWrite = result.TotalNetWrite - oldStats.TotalNetWrite
-			result.IncrementalIORead = result.IncrementalIORead - oldStats.IncrementalIORead
-			result.IncrementalIOWrite = result.IncrementalIOWrite - oldStats.IncrementalIOWrite
+			result.IncrementalIORead = result.TotalIORead - oldStats.TotalIORead
+			result.IncrementalIOWrite = result.TotalIOWrite - oldStats.TotalIOWrite
 		}
 		previousStats[result.ID] = result
 		allStats = append(allStats, result)
@@ -92,7 +92,6 @@ func DockerCollector() extension.Data {
 
 		data.Metrics = append(data.Metrics, insertString)
 	}
-
 	return data
 }
 
@@ -139,11 +138,11 @@ func parseIO(value string) float64 {
 
 	switch unit {
 	case "kB":
-		floatValue *= 1024
+		floatValue *= 1000
 	case "MB":
-		floatValue *= 1024 * 1024
+		floatValue *= 1000 * 1000
 	case "GB":
-		floatValue *= 1024 * 1024 * 1024
+		floatValue *= 1000 * 1000 * 1000
 	}
 
 	return floatValue

@@ -1,7 +1,9 @@
 package main
 
-import "github.com/ChikyuKido/nande/exporter/extension"
+import (
+	"github.com/ChikyuKido/nande/exporter/extension"
+)
 
 func main() {
-	extension.Run(DockerCollector, "Docker")
+	extension.Run(DockerCollector)
 }

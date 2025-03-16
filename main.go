@@ -31,6 +31,7 @@ var runCmd = &cobra.Command{
 
 func main() {
 	logrus.SetFormatter(&util.CustomFormatter{Group: "Nande"})
+	logrus.SetLevel(logrus.DebugLevel)
 	err := godotenv.Load()
 	if err != nil {
 		logrus.Fatal("Error loading .env file")

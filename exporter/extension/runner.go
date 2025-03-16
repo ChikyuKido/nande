@@ -15,21 +15,32 @@ import (
 type MetricFunc func() Data
 
 var (
-	INTERVAL int32
-	URL      string
+	INTERVAL       int32
+	EXTENSION_NAME string
+	URL            string
 )
 
-func Run(metricFunc MetricFunc, extensionName string) {
+func Run(metricFunc MetricFunc) {
 	initEnv()
-	logrus.SetFormatter(&util.CustomFormatter{Group: extensionName})
+	logrus.SetFormatter(&util.CustomFormatter{Group: EXTENSION_NAME})
 	success := checkEnv()
 	if !success {
-		logrus.Fatalf("Failed to start %s", extensionName)
+		logrus.Fatalf("Failed to start %s", EXTENSION_NAME)
+	}
+	err := sendData(Data{
+		ExtensionName: EXTENSION_NAME,
+		Interval:      INTERVAL,
+	})
+	if err != nil {
+		logrus.Fatalf("Failed to send init commit: %v", err)
 	}
 	for {
+		startTime := time.Now()
 		data := metricFunc()
+		diff := time.Since(startTime).Milliseconds()
 		data.Interval = INTERVAL
-		data.ExtensionName = extensionName
+		data.ExtensionName = EXTENSION_NAME
+		data.ProcessingTime = int32(diff)
 		err := sendData(data)
 		if err != nil {
 			logrus.Errorf("Failed to send metric data: %v", err)
@@ -78,6 +89,12 @@ func checkEnv() bool {
 		return false
 	} else {
 		URL = os.Getenv("URL")
+	}
+	if os.Getenv("EXTENSION_NAME") == "" {
+		logrus.Error("EXTENSION_NAME environment variable not set")
+		return false
+	} else {
+		EXTENSION_NAME = os.Getenv("URL")
 	}
 	return true
 }

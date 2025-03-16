@@ -6,9 +6,10 @@ import (
 )
 
 type Data struct {
-	ExtensionName string
-	Interval      int32
-	Metrics       []string
+	ExtensionName  string
+	Interval       int32
+	ProcessingTime int32
+	Metrics        []string
 }
 
 func SerializeData(data Data) ([]byte, error) {
@@ -16,6 +17,7 @@ func SerializeData(data Data) ([]byte, error) {
 	binary.Write(&buf, binary.LittleEndian, int32(len(data.ExtensionName)))
 	buf.WriteString(data.ExtensionName)
 	binary.Write(&buf, binary.LittleEndian, data.Interval)
+	binary.Write(&buf, binary.LittleEndian, data.ProcessingTime)
 
 	binary.Write(&buf, binary.LittleEndian, int32(len(data.Metrics)))
 	for _, metric := range data.Metrics {
@@ -40,6 +42,9 @@ func DeserializeData(data []byte) (Data, error) {
 	var interval int32
 	binary.Read(&buf, binary.LittleEndian, &interval)
 	result.Interval = interval
+	var processingTime int32
+	binary.Read(&buf, binary.LittleEndian, &processingTime)
+	result.ProcessingTime = processingTime
 
 	var metricsLength int32
 	binary.Read(&buf, binary.LittleEndian, &metricsLength)

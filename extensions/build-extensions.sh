@@ -6,7 +6,7 @@ for dir in */; do
     mkdir -p ../extension-build/"$dir"
 
     cd "$dir" || continue
-    go build -o ../../extension-build/"$dir"
+    go build -o ../../extension-build/"$dir/run"
     cp .env ../../extension-build/"$dir"
     echo "Built $dir extension"
     cd ..
