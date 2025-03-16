@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ChikyuKido/nande/exporter"
+	"github.com/ChikyuKido/nande/grafana"
 	"github.com/ChikyuKido/nande/util"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -15,8 +16,11 @@ var grafanaCmd = &cobra.Command{
 	Short: "For the grafana dashboard",
 	Run: func(cmd *cobra.Command, args []string) {
 		logrus.SetFormatter(&util.CustomFormatter{Group: "Nande-Grafana"})
-		util.CheckEnvForRun()
-
+		util.CheckEnvForGrafana()
+		if len(args) == 0 {
+			logrus.Fatal("You must specify at least one argument. For example \"nande grafana create all\" ")
+		}
+		grafana.Run(args)
 	},
 }
 var runCmd = &cobra.Command{

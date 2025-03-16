@@ -26,3 +26,16 @@ func CheckEnvForRun() string {
 	}
 	return ""
 }
+
+func CheckEnvForGrafana() string {
+	if os.Getenv("GRAFANA_URL") == "" {
+		logrus.Fatalf("GRAFANA_URL not set")
+	}
+	if os.Getenv("GRAFANA_TOKEN") == "" {
+		logrus.Fatalf("GRAFANA_TOKEN not set")
+	}
+	if os.Getenv("EXTENSION_FOLDER") == "" {
+		logrus.Fatalf("EXTENSION_FOLDER not set")
+	}
+	return ""
+}
