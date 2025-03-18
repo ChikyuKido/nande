@@ -108,6 +108,9 @@ func parsePercent(value string) float64 {
 }
 func parseMem(value string) float64 {
 	value = strings.Trim(value, " ")
+	if value == "0B" {
+		return 0
+	}
 	unit := value[len(value)-3:]
 
 	value = value[:len(value)-3]
@@ -128,10 +131,10 @@ func parseMem(value string) float64 {
 	return floatValue
 }
 func parseIO(value string) float64 {
+	value = strings.Trim(value, " ")
 	if value == "0B" {
 		return 0
 	}
-	value = strings.Trim(value, " ")
 	unit := value[len(value)-2:]
 
 	value = value[:len(value)-2]
