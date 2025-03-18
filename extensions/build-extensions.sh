@@ -7,7 +7,10 @@ for dir in */; do
 
     cd "$dir" || continue
     go build -o ../../extension-build/"$dir/run"
-    cp .env ../../extension-build/"$dir"
+    while read -r line; do
+        echo "moving $line to build dir"
+        cp "$line" ../../extension-build/"$dir"
+    done < <(cat .tomove)
     echo "Built $dir extension"
     cd ..
   fi

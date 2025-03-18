@@ -6,10 +6,5 @@ import (
 )
 
 func main() {
-
-	if len(os.Args) == 1 {
-		extension.Run(DockerCollector)
-	} else if os.Args[1] == "grafana" {
-
-	}
+	extension.Start(os.Args, DockerCollector, CreateGrafanaConf)
 }

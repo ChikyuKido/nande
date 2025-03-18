@@ -19,7 +19,7 @@ func CreateDashboard(args []string) {
 	if args[1] != "all" {
 		createDashboardFor(args[1])
 	} else {
-		dir, err := os.ReadDir("extensions")
+		dir, err := os.ReadDir(os.Getenv("EXTENSION_FOLDER"))
 		if err != nil {
 			return
 		}
@@ -32,7 +32,7 @@ func CreateDashboard(args []string) {
 	}
 }
 func createDashboardFor(name string) {
-	dir := "extensions/" + name
+	dir := os.Getenv("EXTENSION_FOLDER") + "/" + name
 	_, err := os.ReadDir(dir)
 	if err != nil {
 		logrus.Fatalf("Extension '%s' does not exists", name)
@@ -80,14 +80,17 @@ func getConfigForExtension(dir string, name string) []byte {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		logrus.Fatalf("Can't load grafana extension for '%s' extension.", name)
+		logrus.Fatalf("Can't load grafana extension for '%s' extension: %v", name, err)
 	}
-
+	if out.String()[0] == '1' {
+		logrus.Fatalf("Failed to get extension data for %s: %s", name, out.String()[1:])
+	}
 	return reformatConfigForGrafana(out.Bytes())
 }
 
 func reformatConfigForGrafana(data []byte) []byte {
-	jsonData := string(data)
+	jsonData := strings.Trim(string(data), " ")
+	jsonData = strings.Trim(jsonData, "\n")
 
 	formattedJSON := fmt.Sprintf("{\"dashboard\": %s}", jsonData)
 

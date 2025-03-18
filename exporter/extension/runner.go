@@ -13,7 +13,7 @@ import (
 )
 
 type MetricFunc func() Data
-type GrafanaConfigFunc func() string
+type GrafanaConfigFunc func() (string, error)
 
 var (
 	INTERVAL       int32
@@ -34,7 +34,11 @@ func Start(args []string, metricFunc MetricFunc, grafanaConfigFunc GrafanaConfig
 }
 
 func RunGrafana(grafanaConfigFunc GrafanaConfigFunc) {
-	data := grafanaConfigFunc()
+	data, err := grafanaConfigFunc()
+	if err != nil {
+		fmt.Printf("1%s", err.Error())
+		return
+	}
 	fmt.Println(data)
 }
 
