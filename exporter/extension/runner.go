@@ -13,12 +13,30 @@ import (
 )
 
 type MetricFunc func() Data
+type GrafanaConfigFunc func() string
 
 var (
 	INTERVAL       int32
 	EXTENSION_NAME string
 	URL            string
 )
+
+func Start(args []string, metricFunc MetricFunc, grafanaConfigFunc GrafanaConfigFunc) {
+	if len(args) == 1 {
+		logrus.Fatalf("Could not start extension because no args were provided")
+	}
+	if args[1] == "run" {
+		Run(metricFunc)
+	} else if args[1] == "grafana" {
+		RunGrafana(grafanaConfigFunc)
+	}
+
+}
+
+func RunGrafana(grafanaConfigFunc GrafanaConfigFunc) {
+	data := grafanaConfigFunc()
+	fmt.Println(data)
+}
 
 func Run(metricFunc MetricFunc) {
 	initEnv()

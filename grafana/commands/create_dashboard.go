@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -73,14 +74,25 @@ func sendConfigToGrafana(data []byte) error {
 }
 
 func getConfigForExtension(dir string, name string) []byte {
-	config := dir + "/grafana.json"
-	if _, err := os.Stat(config); os.IsNotExist(err) {
-		logrus.Fatalf("Grafana extension for '%s' does not exist.", name)
-	}
-	file, err := os.ReadFile(config)
+	var out bytes.Buffer
+	cmd := exec.Command("./run", "grafana")
+	cmd.Dir = dir
+	cmd.Stdout = &out
+	err := cmd.Run()
 	if err != nil {
-		logrus.Fatalf("Can't read grafana extension for '%s' extension.", name)
+		logrus.Fatalf("Can't load grafana extension for '%s' extension.", name)
 	}
 
-	return []byte(strings.ReplaceAll(fmt.Sprintf("{\"dashboard\": %s}", string(file)), "${DS_INFLUXDB}", os.Getenv("GRAFANA_INFLUX_DATASOURCE_ID")))
+	return reformatConfigForGrafana(out.Bytes())
+}
+
+func reformatConfigForGrafana(data []byte) []byte {
+	jsonData := string(data)
+
+	formattedJSON := fmt.Sprintf("{\"dashboard\": %s}", jsonData)
+
+	grafanaDatasourceID := os.Getenv("GRAFANA_INFLUX_DATASOURCE_ID")
+	finalJSON := strings.ReplaceAll(formattedJSON, "${DS_INFLUXDB}", grafanaDatasourceID)
+
+	return []byte(finalJSON)
 }
