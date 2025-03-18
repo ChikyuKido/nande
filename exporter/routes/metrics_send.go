@@ -2,12 +2,14 @@ package routes
 
 import (
 	"context"
+	"fmt"
 	"github.com/ChikyuKido/nande/exporter/database"
 	"github.com/ChikyuKido/nande/exporter/extension"
 	extension_runner "github.com/ChikyuKido/nande/exporter/extension-runner"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"time"
 )
 
 func SendMetrics() http.HandlerFunc {
@@ -23,7 +25,9 @@ func SendMetrics() http.HandlerFunc {
 			return
 		}
 		failed := false
+		timestamp := time.Now().UnixNano()
 		for _, line := range data.Metrics {
+			line = line + fmt.Sprintf("%d", timestamp)
 			err := database.DB.WriteApi.WriteRecord(context.Background(), line)
 			if err != nil {
 				logrus.Errorf("Write error: %v", err)

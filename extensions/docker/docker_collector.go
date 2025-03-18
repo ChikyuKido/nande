@@ -6,6 +6,7 @@ import (
 	"github.com/ChikyuKido/nande/exporter/extension"
 	"github.com/sirupsen/logrus"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -27,6 +28,7 @@ type DockerStats struct {
 }
 
 var previousStats = make(map[string]DockerStats)
+var numCPU = runtime.NumCPU()
 
 func DockerCollector() extension.Data {
 	cmd := exec.Command("docker", "stats", "--no-stream", "--format", "{{json .}}")
@@ -60,7 +62,7 @@ func DockerCollector() extension.Data {
 		result.TotalNetWrite = parseIO(netIO[1])
 		mem := strings.Split(stats["MemUsage"].(string), "/")
 		result.MemUsed = parseMem(mem[0])
-		result.CPUPercent = parsePercent(stats["CPUPerc"].(string))
+		result.CPUPercent = parsePercent(stats["CPUPerc"].(string)) / float64(numCPU)
 		result.MemPercent = parsePercent(stats["MemPerc"].(string))
 
 		if oldStats.ID != "" {
@@ -126,6 +128,9 @@ func parseMem(value string) float64 {
 	return floatValue
 }
 func parseIO(value string) float64 {
+	if value == "0B" {
+		return 0
+	}
 	value = strings.Trim(value, " ")
 	unit := value[len(value)-2:]
 
