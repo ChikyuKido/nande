@@ -2,6 +2,7 @@ module github.com/ChikyuKido/nande
 
 go 1.24.1
 
+
 require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/joho/godotenv v1.5.1

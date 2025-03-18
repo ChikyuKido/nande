@@ -21,7 +21,7 @@ func RunExtensions(folder string) bool {
 				logrus.Infof("Extension in %s not active. Skipping it.\n", extensionDir)
 				continue
 			}
-			cmd := exec.Command("./run")
+			cmd := exec.Command("./run", "run")
 			cmd.Dir = extensionDir
 			cmd.Env = append(os.Environ(), "URL=http://localhost:"+os.Getenv("WEB_PORT")+"/metrics/send")
 			cmd.Stdout = os.Stdout

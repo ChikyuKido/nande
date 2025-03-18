@@ -1,9 +1,6 @@
-
 services:
   nande:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/chikyukido/nande:latest
     container_name: nande
     environment:
       WEB_PORT: 6643
@@ -12,16 +9,16 @@ services:
       INFLUX_TOKEN: superscecrettoken
       INFLUX_ORG: nande
       INFLUX_BUCKET: nande
-      GRAFANA_TOKEN: glsa_SXiul6HZWdBkoyHTU8UV5XfB5zlOQDjX_c1d09d8f
+      GRAFANA_TOKEN: your_grafana_token
       GRAFANA_URL: http://grafana:3000
-      GRAFANA_INFLUX_DATASOURCE_ID: aeg13b6nhlse8b
+      GRAFANA_INFLUX_DATASOURCE_ID: your_grafana_influx_datasource_id
     ports:
       - "6643:6643"
     networks:
       nande-network:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./dev-volume:/app/extensions
+      - ./dev-volume:/app/extensions # mount for the extension folder. There you can modify the env variables or add extensions
     restart: always
   influxdb:
     image: influxdb:latest

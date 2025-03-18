@@ -1,8 +1,6 @@
 #Build stage
 FROM golang:1.24.1-alpine AS builder
 
-RUN apk add --no-cache upx
-
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
 WORKDIR /app
@@ -14,16 +12,16 @@ RUN go mod download
 
 RUN go build -ldflags="-s -w"
 
-RUN upx --best --lzma nande
-
 #Run stage
 FROM golang:1.24.1-alpine
+
+RUN apk add --no-cache docker
 
 ENV WEB_PORT=6643
 ENV EXTENSION_FOLDER=extension-build
 
 COPY --from=builder /app/nande /app/nande
-COPY --from=builder /app/extensions /app/extensions
+COPY --from=builder /app/extensions /app/default-extensions
 COPY docker/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 WORKDIR /app
