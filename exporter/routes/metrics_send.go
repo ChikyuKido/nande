@@ -25,9 +25,9 @@ func SendMetrics() http.HandlerFunc {
 			return
 		}
 		failed := false
-		timestamp := time.Now().UnixNano()
+		timestamp := time.Now().UTC().UnixNano()
 		for _, line := range data.Metrics {
-			line = line + fmt.Sprintf("%d", timestamp)
+			line = line + fmt.Sprintf(" %d", timestamp)
 			err := database.DB.WriteApi.WriteRecord(context.Background(), line)
 			if err != nil {
 				logrus.Errorf("Write error: %v", err)

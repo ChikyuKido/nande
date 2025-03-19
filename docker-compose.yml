@@ -49,8 +49,6 @@ services:
       - "3000:3000"
     networks:
       nande-network:
-    depends_on:
-      - influxdb
     volumes:
       - grafana-data:/var/lib/grafana
     restart: always

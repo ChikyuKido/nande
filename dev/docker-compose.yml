@@ -12,6 +12,8 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=nande
       - DOCKER_INFLUXDB_INIT_BUCKET=nande
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=superscecrettoken
+    networks:
+      nande-network:
     ports:
       - "8086:8086"   # InfluxDB port
     volumes:
@@ -27,10 +29,14 @@ services:
       - "3000:3000"   # Grafana port
     depends_on:
       - influxdb
+    networks:
+      nande-network:
     volumes:
       - grafana-data:/var/lib/grafana
     restart: always
 
+networks:
+  nande-network:
 volumes:
   influxdb-data:
   grafana-data:
