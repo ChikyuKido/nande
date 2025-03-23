@@ -132,7 +132,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"nande\")\n  |> range(start: -15m)  // Adjust the time range as needed\n  |> filter(fn: (r) => r._measurement == \"smartctl\")\n  |> keep(columns: [\"serial\"]) \n  |> distinct(column: \"serial\")\n  |> group(columns: [])\n  |> count()\n  |> yield(name: \"count\")",
+          "query": "from(bucket: \"nande\")\n  |> range(start: -1d)  // Adjust the time range as needed\n  |> filter(fn: (r) => r._measurement == \"smartctl\")\n  |> keep(columns: [\"serial\"]) \n  |> distinct(column: \"serial\")\n  |> group(columns: [])\n  |> count()\n  |> yield(name: \"count\")",
           "refId": "A",
           "datasource": {
             "type": "influxdb",
@@ -148,7 +148,7 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
-      "description": "Shows if the drive is still operational",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -226,7 +226,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 811
+                "value": 625
               }
             ]
           },
@@ -430,7 +430,7 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
-      "description": "The number of drives",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -482,7 +482,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"nande\")\n  |> range(start: -15m)\n  |> filter(fn: (r) => r._measurement == \"smartctl\")\n  |> filter(fn: (r) => r._field == \"health\" and r._value == 0) \n  |> keep(columns: [\"serial\"]) \n  |> distinct(column: \"serial\")\n  |> group(columns: [])\n  |> count()\n  |> yield(name: \"count\")",
+          "query": "from(bucket: \"nande\")\n  |> range(start: -1d)\n  |> filter(fn: (r) => r._measurement == \"smartctl\")\n  |> filter(fn: (r) => r._field == \"health\" and r._value == 0) \n  |> keep(columns: [\"serial\"]) \n  |> distinct(column: \"serial\")\n  |> group(columns: [])\n  |> count()\n  |> yield(name: \"count\")",
           "refId": "A",
           "datasource": {
             "type": "influxdb",
@@ -498,7 +498,7 @@
         "type": "influxdb",
         "uid": "${DS_INFLUXDB}"
       },
-      "description": "The number of drives",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -548,7 +548,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"nande\")\n  |> range(start: -15m)\n  |> filter(fn: (r) => r._measurement == \"smartctl\")\n  |> filter(fn: (r) => r._field == \"health\" and r._value == 1) \n  |> keep(columns: [\"serial\"]) \n  |> distinct(column: \"serial\")\n  |> group(columns: [])\n  |> count()\n  |> yield(name: \"count\")",
+          "query": "from(bucket: \"nande\")\n  |> range(start: -1d)\n  |> filter(fn: (r) => r._measurement == \"smartctl\")\n  |> filter(fn: (r) => r._field == \"health\" and r._value == 1) \n  |> keep(columns: [\"serial\"]) \n  |> distinct(column: \"serial\")\n  |> group(columns: [])\n  |> count()\n  |> yield(name: \"count\")",
           "refId": "A",
           "datasource": {
             "type": "influxdb",
@@ -560,7 +560,7 @@
       "type": "stat"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -571,6 +571,155 @@
       "panels": [],
       "title": "Drive {Name}",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "dark-red",
+                  "index": 0,
+                  "text": "Failed"
+                },
+                "1": {
+                  "color": "dark-green",
+                  "index": 1,
+                  "text": "Healthy"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 0,
+        "y": 8
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"health\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> last()\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "The amount of smart attribute with the prefailure flag enabled",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 3,
+        "y": 8
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"prefailure_count\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> last()\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Prefailure Count",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -591,7 +740,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 40,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -599,7 +748,10 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -628,23 +780,24 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "decbytes"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
+        "h": 7,
+        "w": 6,
+        "x": 6,
         "y": 8
       },
-      "id": 7,
+      "id": 11,
       "options": {
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "hideZeros": false,
@@ -655,7 +808,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "",
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"space_used\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A",
           "datasource": {
             "type": "influxdb",
@@ -663,7 +816,667 @@
           }
         }
       ],
-      "title": "Panel Title",
+      "title": "Disk Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 8
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_bytes_read\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Total Disk Read",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 8
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_bytes_written\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Total Disk Write",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 0,
+        "y": 11
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"power_on_hours\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> last()\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Power on Hours",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 3,
+        "y": 11
+      },
+      "id": 16,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"load_cycle_count\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> last()\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Load Cycles",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 0,
+        "y": 14
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"power_cycles\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> last()\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Power Cycles",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 3,
+        "y": 14
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"head_flying_hours\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> last()\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Head Flying Hours",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 15
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"bytes_read_since_period\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Disk Read",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 15
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"nande\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"smartctl\")\n  |> filter(fn: (r) => r[\"_field\"] == \"bytes_written_since_period\")\n  |> filter(fn: (r) => r[\"serial\"] == \"ZFN4H7A6\")\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          }
+        }
+      ],
+      "title": "Disk Write",
       "type": "timeseries"
     }
   ],
@@ -674,13 +1487,13 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Nande-Smartctl",
   "uid": "aegqamluy1clca",
-  "version": 7,
+  "version": 15,
   "weekStart": ""
 }

@@ -73,6 +73,8 @@ type Device struct {
 	Attributes map[string]int64
 }
 
+var oldData map[string]Device = make(map[string]Device)
+
 func SmartCtlCollector() extension.Data {
 	drives := strings.Split(os.Getenv("SCAN_HDDS"), ",")
 	devices := make([]Device, 0)
@@ -125,8 +127,23 @@ func SmartCtlCollector() extension.Data {
 		device.Attributes["reported_uncorrect"] = getRawValueForId(smartData, 187)
 		device.Attributes["command_timeout"] = getRawValueForId(smartData, 188)
 		device.Attributes["load_cycle_count"] = getRawValueForId(smartData, 193)
-		device.Attributes["head_flying_hours"] = getRawValueForId(smartData, 240)
+		flyingHoursString := getRawValueStringForId(smartData, 240)
+		hoursPart := strings.Split(flyingHoursString, "h")[0]
+		flyingHours, err := strconv.ParseInt(hoursPart, 10, 64)
+		if err != nil {
+			logrus.Errorf("Failed to get data for %s: %v", drive, err)
+		} else {
+			device.Attributes["head_flying_hours"] = flyingHours
+		}
 
+		if val, ok := oldData[device.Serial]; ok {
+			device.Attributes["bytes_written_since_period"] = device.Attributes["total_bytes_written"] - val.Attributes["total_bytes_written"]
+			device.Attributes["bytes_read_since_period"] = device.Attributes["total_bytes_read"] - val.Attributes["total_bytes_read"]
+		} else {
+			device.Attributes["bytes_written_since_period"] = 0
+			device.Attributes["bytes_read_since_period"] = 0
+		}
+		oldData[device.Serial] = device
 		devices = append(devices, device)
 	}
 
@@ -137,7 +154,7 @@ func SmartCtlCollector() extension.Data {
 			"total_bytes_written=%d,total_bytes_read=%d,space_used=%d,reallocated_sector_count=%d,"+
 			"current_pending_sector_count=%d,uncorrectable_sector_count=%d,raw_read_error_rate=%d,"+
 			"seek_error_rate=%d,end_to_end_error=%d,reported_uncorrect=%d,command_timeout=%d,"+
-			"load_cycle_count=%d,head_flying_hours=%d",
+			"load_cycle_count=%d,head_flying_hours=%d,bytes_written_since_period=%d,bytes_read_since_period=%d",
 			device.Serial,
 			device.Name,
 			device.Attributes["capacity"],
@@ -158,7 +175,9 @@ func SmartCtlCollector() extension.Data {
 			device.Attributes["reported_uncorrect"],
 			device.Attributes["command_timeout"],
 			device.Attributes["load_cycle_count"],
-			device.Attributes["head_flying_hours"])
+			device.Attributes["head_flying_hours"],
+			device.Attributes["bytes_written_since_period"],
+			device.Attributes["bytes_read_since_period"])
 		data.Metrics = append(data.Metrics, fluxInsert)
 	}
 	return data
@@ -171,6 +190,14 @@ func getRawValueForId(data SmartctlData, id int64) int64 {
 		}
 	}
 	return -1
+}
+func getRawValueStringForId(data SmartctlData, id int64) string {
+	for _, attr := range data.AtaSmartAttributes.Table {
+		if attr.Id == id {
+			return attr.Raw.String
+		}
+	}
+	return ""
 }
 
 func getSpaceUsedForDrive(drive string) (int64, error) {
