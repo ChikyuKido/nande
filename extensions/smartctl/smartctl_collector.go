@@ -70,12 +70,12 @@ type DeviceData struct {
 type Device struct {
 	Name       string
 	Serial     string
-	Attributes map[string]interface{}
+	Attributes map[string]int64
 }
 
 func SmartCtlCollector() extension.Data {
 	drives := strings.Split(os.Getenv("SCAN_HDDS"), ",")
-	//devices := make([]Device, 0)
+	devices := make([]Device, 0)
 	for _, drive := range drives {
 		var buffer bytes.Buffer
 		cmd := exec.Command("smartctl", "-a", "-j", drive)
@@ -91,48 +91,86 @@ func SmartCtlCollector() extension.Data {
 		var device Device
 		device.Name = smartData.ModelName
 		device.Serial = smartData.SerialNumber
-
-		driveName := smartData.Device.Name
-		model := smartData.ModelName
-		serial := smartData.SerialNumber
-		capacityBytes := smartData.UserCapacity.Bytes
 		lbaSize := smartData.LogicalBlockSize
-		healthPassed := smartData.SmartStatus.Passed
-		powerOnHours := smartData.PowerOnTime.Hours
-		powerCycles := smartData.PowerCycleCount
-		temperature := smartData.Temperature.Current
-		prefailureCount := 0
-
-		var totalLBAsWritten, totalLBAsRead int64
+		var prefailureCount int64 = 0
 		for _, attr := range smartData.AtaSmartAttributes.Table {
-			switch attr.Name {
-			case "Total_LBAs_Written":
-
-				totalLBAsWritten = attr.Raw.Value
-			case "Total_LBAs_Read":
-				totalLBAsRead = attr.Raw.Value
-			}
 			if attr.Flags.Prefailure {
 				prefailureCount++
 			}
 		}
-		totalBytesWritten := totalLBAsWritten * int64(lbaSize)
-		totalBytesRead := totalLBAsRead * int64(lbaSize)
 		spaceUsed, err := getSpaceUsedForDrive(drive)
 		if err != nil {
 			logrus.Errorf("Failed to get data for %s: %v", drive, err)
 		}
-		fmt.Printf("Drive: %s (%s) - Serial: %s\n", driveName, model, serial)
-		fmt.Printf("Capacity: %d GB | LBA Size: %d Bytes\n", capacityBytes/1e9, lbaSize)
-		fmt.Printf("SMART Health: %t | Prefailure Attributes: %d\n", healthPassed, prefailureCount)
-		fmt.Printf("Power-On Hours: %d | Power Cycles: %d\n", powerOnHours, powerCycles)
-		fmt.Printf("Temperature: %d°C\n", temperature)
-		fmt.Printf("Total used space: %.2f GB\n", float64(spaceUsed)/1e9)
-		fmt.Printf("Total Data Written: %d GB | Total Data Read: %d GB\n", totalBytesWritten/1e9, totalBytesRead/1e9)
-		fmt.Println("------------------------------------------------------")
+		device.Attributes = make(map[string]int64)
+		device.Attributes["capacity"] = smartData.UserCapacity.Bytes
+		if smartData.SmartStatus.Passed {
+			device.Attributes["health"] = 1
+		} else {
+			device.Attributes["health"] = 0
+		}
+		device.Attributes["power_on_hours"] = smartData.PowerOnTime.Hours
+		device.Attributes["power_cycles"] = smartData.PowerCycleCount
+		device.Attributes["temperature"] = smartData.Temperature.Current
+		device.Attributes["prefailure_count"] = prefailureCount
+		device.Attributes["total_bytes_written"] = getRawValueForId(smartData, 241) * int64(lbaSize)
+		device.Attributes["total_bytes_read"] = getRawValueForId(smartData, 242) * int64(lbaSize)
+		device.Attributes["space_used"] = spaceUsed
+		device.Attributes["reallocated_sector_count"] = getRawValueForId(smartData, 5)
+		device.Attributes["current_pending_sector_count"] = getRawValueForId(smartData, 197)
+		device.Attributes["uncorrectable_sector_count"] = getRawValueForId(smartData, 198)
+		device.Attributes["raw_read_error_rate"] = getRawValueForId(smartData, 1)
+		device.Attributes["seek_error_rate"] = getRawValueForId(smartData, 7)
+		device.Attributes["end_to_end_error"] = getRawValueForId(smartData, 184)
+		device.Attributes["reported_uncorrect"] = getRawValueForId(smartData, 187)
+		device.Attributes["command_timeout"] = getRawValueForId(smartData, 188)
+		device.Attributes["load_cycle_count"] = getRawValueForId(smartData, 193)
+		device.Attributes["head_flying_hours"] = getRawValueForId(smartData, 240)
 
+		devices = append(devices, device)
 	}
-	return extension.Data{}
+
+	data := extension.Data{}
+	for _, device := range devices {
+		fluxInsert := fmt.Sprintf("smartctl,serial=%s,model=%s "+
+			"capacity=%d,health=%d,power_on_hours=%d,power_cycles=%d,temperature=%d,prefailure_count=%d,"+
+			"total_bytes_written=%d,total_bytes_read=%d,space_used=%d,reallocated_sector_count=%d,"+
+			"current_pending_sector_count=%d,uncorrectable_sector_count=%d,raw_read_error_rate=%d,"+
+			"seek_error_rate=%d,end_to_end_error=%d,reported_uncorrect=%d,command_timeout=%d,"+
+			"load_cycle_count=%d,head_flying_hours=%d",
+			device.Serial,
+			device.Name,
+			device.Attributes["capacity"],
+			device.Attributes["health"],
+			device.Attributes["power_on_hours"],
+			device.Attributes["power_cycles"],
+			device.Attributes["temperature"],
+			device.Attributes["prefailure_count"],
+			device.Attributes["total_bytes_written"],
+			device.Attributes["total_bytes_read"],
+			device.Attributes["space_used"],
+			device.Attributes["reallocated_sector_count"],
+			device.Attributes["current_pending_sector_count"],
+			device.Attributes["uncorrectable_sector_count"],
+			device.Attributes["raw_read_error_rate"],
+			device.Attributes["seek_error_rate"],
+			device.Attributes["end_to_end_error"],
+			device.Attributes["reported_uncorrect"],
+			device.Attributes["command_timeout"],
+			device.Attributes["load_cycle_count"],
+			device.Attributes["head_flying_hours"])
+		data.Metrics = append(data.Metrics, fluxInsert)
+	}
+	return data
+}
+
+func getRawValueForId(data SmartctlData, id int64) int64 {
+	for _, attr := range data.AtaSmartAttributes.Table {
+		if attr.Id == id {
+			return attr.Raw.Value
+		}
+	}
+	return -1
 }
 
 func getSpaceUsedForDrive(drive string) (int64, error) {
