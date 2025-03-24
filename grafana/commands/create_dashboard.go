@@ -82,8 +82,10 @@ func getConfigForExtension(dir string, name string) []byte {
 	if err != nil {
 		logrus.Fatalf("Can't load grafana extension for '%s' extension: %v", name, err)
 	}
-	if out.String()[0] == '1' {
-		logrus.Fatalf("Failed to get extension data for %s: %s", name, out.String()[1:])
+	data := out.String()
+	data = strings.TrimSpace(data)
+	if strings.HasPrefix(data, "1") {
+		logrus.Fatalf("Failed to get extension data for %s: %s", name, data[1:])
 	}
 	return reformatConfigForGrafana(out.Bytes())
 }
@@ -96,6 +98,5 @@ func reformatConfigForGrafana(data []byte) []byte {
 
 	grafanaDatasourceID := os.Getenv("GRAFANA_INFLUX_DATASOURCE_ID")
 	finalJSON := strings.ReplaceAll(formattedJSON, "${DS_INFLUXDB}", grafanaDatasourceID)
-
 	return []byte(finalJSON)
 }
