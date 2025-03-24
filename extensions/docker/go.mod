@@ -3,7 +3,7 @@ module nande_docker
 go 1.24.1
 
 require (
-	github.com/ChikyuKido/nande v0.1.1 // indirect
+	github.com/ChikyuKido/nande v0.1.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -15,8 +16,8 @@ func CreateGrafanaConf() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var grafanaDasboard map[string]interface{}
-	err = json.Unmarshal(grafanaDashboardData, &grafanaDasboard)
+	var grafanaDashboard map[string]interface{}
+	err = json.Unmarshal(grafanaDashboardData, &grafanaDashboard)
 	if err != nil {
 		return "", errors.New("failed to parse grafana dashbord file: " + err.Error())
 	}
@@ -26,33 +27,32 @@ func CreateGrafanaConf() (string, error) {
 	}
 	drives := strings.Split(os.Getenv("SCAN_HDDS"), ",")
 	if len(drives) == 0 {
-		logrus.Error("No drive found to add")
 		return "", errors.New("no Drive found to add")
 	}
 	for i, driveWithPrice := range drives {
 		if strings.TrimSpace(driveWithPrice) == "" {
-			logrus.Error("Drive is empty")
-			continue
+			return "", errors.New("drive is empty")
 		}
 		args := strings.Split(driveWithPrice, ":")
 		drive := args[0]
 		serial, err := getSerialForDrive(drive)
 		if err != nil {
-			logrus.Errorf("Failed to get serial for drive %s. The dashboard is not complete : %v", drive, err)
-			continue
+			return "", errors.New("failed to get drive serial: " + err.Error())
 		}
-		rowJson, err := adjustDriveRow(driveRow, i, serial)
+		model, err := getModelForDrive(drive)
 		if err != nil {
-			logrus.Errorf("Failed to adjust the row for the drive %s. The dashboard is not complete : %v", drive, err)
-			continue
+			return "", errors.New("failed to get drive model: " + err.Error())
 		}
-		err = addRowToDashboard(grafanaDasboard, rowJson)
+		rowJson, err := adjustDriveRow(driveRow, i, serial, model)
 		if err != nil {
-			logrus.Errorf("Failed to add the row to the grafana dashboard. The dashboard is not complete : %v", err)
-			continue
+			return "", errors.New("failed to adjust the row for the drive " + drive + ": " + err.Error())
+		}
+		err = addRowToDashboard(grafanaDashboard, rowJson)
+		if err != nil {
+			return "", errors.New("failed to add the dashboard to the grafana dashboard")
 		}
 	}
-	data, err := json.Marshal(grafanaDasboard)
+	data, err := json.Marshal(grafanaDashboard)
 	if err != nil {
 		return "", err
 	}
@@ -62,35 +62,53 @@ func CreateGrafanaConf() (string, error) {
 }
 
 func addRowToDashboard(dashboard, row map[string]interface{}) error {
-	if dashboardPanels, ok := dashboard["panels"].([]interface{}); ok {
-		if rowPanels, ok := row["panels"].([]interface{}); ok {
-			for _, rowPanel := range rowPanels {
-				dashboardPanels = append(dashboardPanels, rowPanel)
-			}
-		}
-	} else {
+	dashboardPanels, ok := dashboard["panels"].([]interface{})
+	if !ok {
 		return errors.New("dashboard does not contain panels")
+	}
+	rowPanels, ok := row["panels"].([]interface{})
+	if ok {
+		dashboardPanels = append(dashboardPanels, rowPanels...)
+		dashboard["panels"] = dashboardPanels
 	}
 	return nil
 }
 
 func getSerialForDrive(drive string) (string, error) {
 	buffer := new(bytes.Buffer)
-	cmd := exec.Command("hdparm", "-I", drive, "|", "grep", "Serial Number")
+	cmd := exec.Command("sudo", "hdparm", "-I", drive)
 	cmd.Stdout = buffer
 	err := cmd.Run()
 	if err != nil {
 		return "", err
 	}
-	serial := strings.Split(buffer.String(), ":")[1]
-	serial = strings.TrimSpace(serial)
-	return serial, nil
+	re := regexp.MustCompile(`Serial Number:\s+(\S+)`)
+	matches := re.FindStringSubmatch(buffer.String())
+	if len(matches) < 2 {
+		return "", fmt.Errorf("serial number not found in output")
+	}
+	return strings.TrimSpace(matches[1]), nil
+}
+func getModelForDrive(drive string) (string, error) {
+	buffer := new(bytes.Buffer)
+	cmd := exec.Command("sudo", "hdparm", "-I", drive)
+	cmd.Stdout = buffer
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	re := regexp.MustCompile(`Model Number:\s+(\S+)`)
+	matches := re.FindStringSubmatch(buffer.String())
+	if len(matches) < 2 {
+		return "", fmt.Errorf("model number not found in output")
+	}
+	return strings.TrimSpace(matches[1]), nil
 }
 
-func adjustDriveRow(data []byte, count int, serial string) (map[string]interface{}, error) {
-
+func adjustDriveRow(data []byte, count int, serial string, model string) (map[string]interface{}, error) {
 	dataString := string(data)
 	dataString = strings.ReplaceAll(dataString, "{SERIAL_DRIVE_ID}", serial)
+	dataString = strings.ReplaceAll(dataString, "Drive {Name}", model+" "+serial)
 	newData := []byte(dataString)
 
 	var rowJson map[string]interface{}

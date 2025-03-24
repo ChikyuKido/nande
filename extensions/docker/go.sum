@@ -4,6 +4,7 @@ github.com/ChikyuKido/nande v0.0.0-20250318203448-5efb361ead88 h1:IygoMQZBRPwy+2
 github.com/ChikyuKido/nande v0.0.0-20250318203448-5efb361ead88/go.mod h1:689O3Gu9n6BRhNWSeRIIJlQZDSUR1XNf2m9QcPg+xLo=
 github.com/ChikyuKido/nande v0.1.1 h1:hMivwOz2DwVwEhzeiAzVlLkyWvVDGjibezjJA/QFRvc=
 github.com/ChikyuKido/nande v0.1.1/go.mod h1:689O3Gu9n6BRhNWSeRIIJlQZDSUR1XNf2m9QcPg+xLo=
+github.com/ChikyuKido/nande v0.1.3/go.mod h1:vSQnshTPRe9yNcr7umCAMZSaAen5K7keEVeniygyQlI=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0 h1:axGnT1gRIfimI7gJifB699GoE/oq+F2MU7Dml6nw9rQ=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0/go.mod h1:lvDnEdqiQrp0O42VQGgmlKpxL1AP2+08jFMw88y4klk=
