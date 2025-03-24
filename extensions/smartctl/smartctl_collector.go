@@ -34,10 +34,12 @@ type SmartctlData struct {
 	AtaSmartAttributes struct {
 		Revision int `json:"revision"`
 		Table    []struct {
-			Id    int64  `json:"id"`
-			Name  string `json:"name"`
-			Value int64  `json:"value"`
-			Flags struct {
+			Id     int64  `json:"id"`
+			Name   string `json:"name"`
+			Value  int64  `json:"value"`
+			Worst  int64  `json:"worst"`
+			Thresh int64  `json:"thresh"`
+			Flags  struct {
 				Prefailure bool `json:"prefailure"`
 			} `json:"flags"`
 			Raw struct {
@@ -70,6 +72,7 @@ type DeviceData struct {
 type Device struct {
 	Name       string
 	Serial     string
+	Price      float64
 	Attributes map[string]int64
 }
 
@@ -78,7 +81,15 @@ var oldData map[string]Device = make(map[string]Device)
 func SmartCtlCollector() extension.Data {
 	drives := strings.Split(os.Getenv("SCAN_HDDS"), ",")
 	devices := make([]Device, 0)
-	for _, drive := range drives {
+	for _, driveWithPrice := range drives {
+		args := strings.Split(driveWithPrice, ":")
+		drive := args[0]
+		priceStr := args[1]
+		price, err := strconv.ParseFloat(priceStr, 64)
+		if err != nil {
+			fmt.Errorf("Please enter a valid price tag to the drive. You can use 0.0 if you want to disable it: %v", err)
+			price = 0.0
+		}
 		var buffer bytes.Buffer
 		cmd := exec.Command("smartctl", "-a", "-j", drive)
 		cmd.Stdout = &buffer
@@ -93,11 +104,18 @@ func SmartCtlCollector() extension.Data {
 		var device Device
 		device.Name = smartData.ModelName
 		device.Serial = smartData.SerialNumber
+		device.Price = price
 		lbaSize := smartData.LogicalBlockSize
 		var prefailureCount int64 = 0
+		var prefailureWorstCount int64 = 0
 		for _, attr := range smartData.AtaSmartAttributes.Table {
 			if attr.Flags.Prefailure {
-				prefailureCount++
+				if attr.Value <= attr.Thresh {
+					prefailureCount++
+				}
+				if attr.Worst <= attr.Thresh {
+					prefailureWorstCount++
+				}
 			}
 		}
 		spaceUsed, err := getSpaceUsedForDrive(drive)
@@ -115,6 +133,7 @@ func SmartCtlCollector() extension.Data {
 		device.Attributes["power_cycles"] = smartData.PowerCycleCount
 		device.Attributes["temperature"] = smartData.Temperature.Current
 		device.Attributes["prefailure_count"] = prefailureCount
+		device.Attributes["prefailure_worst_count"] = prefailureWorstCount
 		device.Attributes["total_bytes_written"] = getRawValueForId(smartData, 241) * int64(lbaSize)
 		device.Attributes["total_bytes_read"] = getRawValueForId(smartData, 242) * int64(lbaSize)
 		device.Attributes["space_used"] = spaceUsed
@@ -143,6 +162,7 @@ func SmartCtlCollector() extension.Data {
 			device.Attributes["bytes_written_since_period"] = 0
 			device.Attributes["bytes_read_since_period"] = 0
 		}
+
 		oldData[device.Serial] = device
 		devices = append(devices, device)
 	}
@@ -154,7 +174,7 @@ func SmartCtlCollector() extension.Data {
 			"total_bytes_written=%d,total_bytes_read=%d,space_used=%d,reallocated_sector_count=%d,"+
 			"current_pending_sector_count=%d,uncorrectable_sector_count=%d,raw_read_error_rate=%d,"+
 			"seek_error_rate=%d,end_to_end_error=%d,reported_uncorrect=%d,command_timeout=%d,"+
-			"load_cycle_count=%d,head_flying_hours=%d,bytes_written_since_period=%d,bytes_read_since_period=%d",
+			"load_cycle_count=%d,head_flying_hours=%d,bytes_written_since_period=%d,bytes_read_since_period=%d,prefailure_worst_count=%d,price_per_gig=%f",
 			device.Serial,
 			device.Name,
 			device.Attributes["capacity"],
@@ -177,7 +197,9 @@ func SmartCtlCollector() extension.Data {
 			device.Attributes["load_cycle_count"],
 			device.Attributes["head_flying_hours"],
 			device.Attributes["bytes_written_since_period"],
-			device.Attributes["bytes_read_since_period"])
+			device.Attributes["bytes_read_since_period"],
+			device.Attributes["prefailure_worst_count"],
+			device.Price/float64(device.Attributes["capacity"]/1000/1000/1000))
 		data.Metrics = append(data.Metrics, fluxInsert)
 	}
 	return data
