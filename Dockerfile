@@ -15,7 +15,7 @@ RUN go build -ldflags="-s -w"
 #Run stage
 FROM golang:1.24.1-alpine
 
-RUN apk add --no-cache docker
+RUN apk add --no-cache docker hdparm smartmontools lsblk
 
 ENV WEB_PORT=6643
 ENV EXTENSION_FOLDER=extension-build

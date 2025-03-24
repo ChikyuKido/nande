@@ -3,7 +3,7 @@ module nande-smartctl
 go 1.24.1
 
 require (
-	github.com/ChikyuKido/nande v0.1.4
+	github.com/ChikyuKido/nande v0.1.5
 	github.com/sirupsen/logrus v1.9.3
 )
 

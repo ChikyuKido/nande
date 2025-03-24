@@ -76,7 +76,7 @@ func addRowToDashboard(dashboard, row map[string]interface{}) error {
 
 func getSerialForDrive(drive string) (string, error) {
 	buffer := new(bytes.Buffer)
-	cmd := exec.Command("sudo", "hdparm", "-I", drive)
+	cmd := exec.Command("hdparm", "-I", drive)
 	cmd.Stdout = buffer
 	err := cmd.Run()
 	if err != nil {
@@ -91,7 +91,7 @@ func getSerialForDrive(drive string) (string, error) {
 }
 func getModelForDrive(drive string) (string, error) {
 	buffer := new(bytes.Buffer)
-	cmd := exec.Command("sudo", "hdparm", "-I", drive)
+	cmd := exec.Command("hdparm", "-I", drive)
 	cmd.Stdout = buffer
 	err := cmd.Run()
 	if err != nil {

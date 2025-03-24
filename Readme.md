@@ -1,30 +1,27 @@
-
+# Installation with docker
+Docker compose. 
+```yaml
 services:
   nande:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/chikyukido/nande:latest
     container_name: nande
-    privileged: true
     environment:
       WEB_PORT: 6643
       EXTENSION_FOLDER: extension-build
       INFLUX_URL: http://influxdb:8086
-      INFLUX_TOKEN: superscecrettoken
+      INFLUX_TOKEN: superscecrettoken # change this to the same as in the influxdb
       INFLUX_ORG: nande
       INFLUX_BUCKET: nande
-      GRAFANA_TOKEN: glsa_neyOrwiCERldkxlUy5VfqaDjODEVDJKs_e1d2f3a1
+      GRAFANA_TOKEN: your_grafana_token # create a service user in grafana
       GRAFANA_URL: http://grafana:3000
-      GRAFANA_INFLUX_DATASOURCE_ID: aeg13b6nhlse8b
+      GRAFANA_INFLUX_DATASOURCE_ID: your_grafana_influx_datasource_id
     ports:
       - "6643:6643"
     networks:
       nande-network:
-    devices:
-      - "/dev/sd*:/dev/sd*"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./dev-volume:/app/extensions
+      - ./dev-volume:/app/extensions # mount for the extension folder. There you can modify the env variables or add extensions
     restart: always
   influxdb:
     image: influxdb:latest
@@ -34,10 +31,10 @@ services:
       - INFLUXDB_HTTP_BIND_ADDRESS=:8086
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=Password
+      - DOCKER_INFLUXDB_INIT_PASSWORD=Password # change the default password
       - DOCKER_INFLUXDB_INIT_ORG=nande
       - DOCKER_INFLUXDB_INIT_BUCKET=nande
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=superscecrettoken
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=superscecrettoken # change me
     ports:
       - "8086:8086"
     networks:
@@ -55,8 +52,6 @@ services:
       - "3000:3000"
     networks:
       nande-network:
-    depends_on:
-      - influxdb
     volumes:
       - grafana-data:/var/lib/grafana
     restart: always
@@ -66,3 +61,4 @@ networks:
 volumes:
   influxdb-data:
   grafana-data:
+```
