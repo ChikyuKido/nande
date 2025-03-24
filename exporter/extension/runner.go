@@ -23,11 +23,6 @@ var (
 
 func Start(args []string, metricFunc MetricFunc, grafanaConfigFunc GrafanaConfigFunc) {
 	initEnv()
-	logrus.SetFormatter(&util.CustomFormatter{Group: EXTENSION_NAME})
-	success := checkEnv()
-	if !success {
-		logrus.Fatalf("Failed to start %s", EXTENSION_NAME)
-	}
 	if len(args) == 1 {
 		logrus.Fatalf("Could not start extension because no args were provided")
 	}
@@ -49,6 +44,11 @@ func RunGrafana(grafanaConfigFunc GrafanaConfigFunc) {
 }
 
 func Run(metricFunc MetricFunc) {
+	logrus.SetFormatter(&util.CustomFormatter{Group: EXTENSION_NAME})
+	success := checkEnv()
+	if !success {
+		logrus.Fatalf("Failed to start %s", EXTENSION_NAME)
+	}
 	err := sendData(Data{
 		ExtensionName: EXTENSION_NAME,
 		Interval:      INTERVAL,
