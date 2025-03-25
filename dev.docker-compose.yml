@@ -8,7 +8,7 @@ services:
     privileged: true
     environment:
       WEB_PORT: 6643
-      EXTENSION_FOLDER: extension-build
+      EXTENSION_FOLDER: extensions
       INFLUX_URL: http://influxdb:8086
       INFLUX_TOKEN: superscecrettoken
       INFLUX_ORG: nande
@@ -25,6 +25,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./dev-volume:/app/extensions
+      - /media/HDD:/mnt/disk1  # Here enter the disk for the smartctl extension
+      - /media/Games:/mnt/disk2
     restart: always
   influxdb:
     image: influxdb:latest
@@ -49,6 +51,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    user: '0'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     ports:

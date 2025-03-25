@@ -8,7 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -76,15 +75,22 @@ type Device struct {
 	Attributes map[string]int64
 }
 
-var oldData map[string]Device = make(map[string]Device)
+var oldData = make(map[string]Device)
 
 func SmartCtlCollector() extension.Data {
 	drives := strings.Split(os.Getenv("SCAN_HDDS"), ",")
 	devices := make([]Device, 0)
-	for _, driveWithPrice := range drives {
-		args := strings.Split(driveWithPrice, ":")
+	if len(drives) == 0 {
+		return extension.Data{}
+	}
+	for _, fullDriveStr := range drives {
+		if strings.TrimSpace(fullDriveStr) == "" {
+			continue
+		}
+		args := strings.Split(fullDriveStr, ":")
 		drive := args[0]
-		priceStr := args[1]
+		mount := args[1]
+		priceStr := args[2]
 		price, err := strconv.ParseFloat(priceStr, 64)
 		if err != nil {
 			fmt.Errorf("Please enter a valid price tag to the drive. You can use 0.0 if you want to disable it: %v", err)
@@ -118,7 +124,7 @@ func SmartCtlCollector() extension.Data {
 				}
 			}
 		}
-		spaceUsed, err := getSpaceUsedForDrive(drive)
+		spaceUsed, err := getSpaceUsedForDrive(mount)
 		if err != nil {
 			logrus.Errorf("Failed to get data for %s: %v", drive, err)
 		}
@@ -169,37 +175,20 @@ func SmartCtlCollector() extension.Data {
 
 	data := extension.Data{}
 	for _, device := range devices {
-		fluxInsert := fmt.Sprintf("smartctl,serial=%s,model=%s "+
-			"capacity=%d,health=%d,power_on_hours=%d,power_cycles=%d,temperature=%d,prefailure_count=%d,"+
-			"total_bytes_written=%d,total_bytes_read=%d,space_used=%d,reallocated_sector_count=%d,"+
-			"current_pending_sector_count=%d,uncorrectable_sector_count=%d,raw_read_error_rate=%d,"+
-			"seek_error_rate=%d,end_to_end_error=%d,reported_uncorrect=%d,command_timeout=%d,"+
-			"load_cycle_count=%d,head_flying_hours=%d,bytes_written_since_period=%d,bytes_read_since_period=%d,prefailure_worst_count=%d,price_per_gig=%f",
-			device.Serial,
-			device.Name,
-			device.Attributes["capacity"],
-			device.Attributes["health"],
-			device.Attributes["power_on_hours"],
-			device.Attributes["power_cycles"],
-			device.Attributes["temperature"],
-			device.Attributes["prefailure_count"],
-			device.Attributes["total_bytes_written"],
-			device.Attributes["total_bytes_read"],
-			device.Attributes["space_used"],
-			device.Attributes["reallocated_sector_count"],
-			device.Attributes["current_pending_sector_count"],
-			device.Attributes["uncorrectable_sector_count"],
-			device.Attributes["raw_read_error_rate"],
-			device.Attributes["seek_error_rate"],
-			device.Attributes["end_to_end_error"],
-			device.Attributes["reported_uncorrect"],
-			device.Attributes["command_timeout"],
-			device.Attributes["load_cycle_count"],
-			device.Attributes["head_flying_hours"],
-			device.Attributes["bytes_written_since_period"],
-			device.Attributes["bytes_read_since_period"],
-			device.Attributes["prefailure_worst_count"],
-			device.Price/float64(device.Attributes["capacity"]/1000/1000/1000))
+		fluxInsert := fmt.Sprintf("smartctl,serial=%s,model=%s ", device.Serial, strings.ReplaceAll(device.Name, " ", "_"))
+
+		for key, value := range device.Attributes {
+			if key == "price" {
+				continue
+			}
+			// don't add data that was not available
+			if value < 0 {
+				continue
+			}
+			fluxInsert += fmt.Sprintf("%s=%d,", key, value)
+		}
+		pricePerGig := device.Price / float64(device.Attributes["capacity"]/1000/1000/1000)
+		fluxInsert += fmt.Sprintf("price_per_gig=%f", pricePerGig)
 		data.Metrics = append(data.Metrics, fluxInsert)
 	}
 	return data
@@ -222,63 +211,30 @@ func getRawValueStringForId(data SmartctlData, id int64) string {
 	return ""
 }
 
-func getSpaceUsedForDrive(drive string) (int64, error) {
-	partitions, err := getAllPartitions(drive)
-	if err != nil {
-		return 0, err
-	}
-	size, err := getSpaceUsedForPartitions(partitions)
+func getSpaceUsedForDrive(mount string) (int64, error) {
+	size, err := getSpaceUsedForPartitions(mount)
 	if err != nil {
 		return 0, err
 	}
 	return size, nil
 }
 
-func getSpaceUsedForPartitions(partitions []string) (int64, error) {
-	var usedSpace int64
-	for _, partition := range partitions {
-		cmd := exec.Command("df", "-B1", "--output=used", partition)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return 0, fmt.Errorf("failed to get used space for %s: %v", partition, err)
-		}
-		lines := strings.Split(strings.TrimSpace(out.String()), "\n")
-		if len(lines) < 2 {
-			return 0, fmt.Errorf("failed to parse used space for %s", partition)
-		}
-		usedSpaceStr := strings.TrimSpace(lines[1])
-		currentUsedSpace, err := strconv.ParseInt(usedSpaceStr, 10, 64)
-		if err != nil {
-			return 0, fmt.Errorf("failed to parse used space for %s: %v", partition, err)
-		}
-		usedSpace += currentUsedSpace
-	}
-	return usedSpace, nil
-}
-
-func getAllPartitions(disk string) ([]string, error) {
-	cmd := exec.Command("lsblk", "-o", "NAME,MOUNTPOINT", "-J")
+func getSpaceUsedForPartitions(mount string) (int64, error) {
+	cmd := exec.Command("df", "-P", mount)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to get partitions for %s: %v", disk, err)
+		return 0, fmt.Errorf("failed to get used space for %s: %v", mount, err)
 	}
-
-	var data DeviceData
-	if err := json.Unmarshal(out.Bytes(), &data); err != nil {
-		return nil, fmt.Errorf("failed to parse lsblk output: %v", err)
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) < 2 {
+		return 0, fmt.Errorf("failed to parse used space for %s", mount)
 	}
-	partitions := make([]string, 0)
-	for _, block := range data.Blockdevices {
-		if block.Name == filepath.Base(disk) {
-			for _, child := range block.Children {
-				if child.Mountpoint != nil {
-					partitions = append(partitions, fmt.Sprintf("/dev/%s", child.Name))
-				}
-			}
-		}
+	fields := strings.Fields(lines[1])
+	usedSpaceStr := strings.TrimSpace(fields[2])
+	usedSpace, err := strconv.ParseInt(usedSpaceStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse used space for %s: %v", mount, err)
 	}
-
-	return partitions, nil
+	return usedSpace * 1000, nil
 }

@@ -6,11 +6,4 @@ if [ ! "$(ls -A /app/extensions)" ]; then
     echo "Default extensions copied to /app/extensions"
 fi
 
-cd extensions
-echo "-----------------------------"
-echo "Build the extensions"
-./build-extensions.sh
-echo "-----------------------------"
-echo "Finished building the extensions. Starting the program now"
-cd ..
 exec ./nande run

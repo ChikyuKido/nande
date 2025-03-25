@@ -11,6 +11,7 @@ import (
 func RunExtensions(folder string) bool {
 	dir, err := os.ReadDir(folder)
 	if err != nil {
+		logrus.Errorf("Failed to read directory: %s", err)
 		return false
 	}
 
